@@ -462,104 +462,106 @@
 </div>
 
 <script>
-  const startInput = document.getElementById('startDate');
-  const calcBtn = document.getElementById('calcBtn');
-  const results = document.getElementById('results');
-  const dateStartEl = document.getElementById('dateStart');
-  const dateSixEl = document.getElementById('dateSix');
-  const dateYearEl = document.getElementById('dateYear');
+  /* ============================================================
+     Failsafe: whatever else happens, make sure the splash screen
+     is dismissed. This runs first and is not dependent on anything
+     below it succeeding.
+     ============================================================ */
+  var splashEl = document.getElementById('splash');
 
-  const arFormatter = new Intl.DateTimeFormat('ar-SA', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  function addMonths(date, months) {
-    const d = new Date(date.getTime());
-    const targetMonth = d.getMonth() + months;
-    d.setMonth(targetMonth);
-    return d;
+  function dismissSplash(){
+    if (splashEl) splashEl.classList.add('hide');
   }
 
-  function formatDate(date) {
-    return arFormatter.format(date);
-  }
+  var splashAutoTimer = setTimeout(dismissSplash, 2400);
+  // Absolute hard stop — no matter what else goes wrong on this page,
+  // the splash will never stay up longer than 5 seconds.
+  setTimeout(dismissSplash, 5000);
 
-  calcBtn.addEventListener('click', () => {
-    if (!startInput.value) {
-      startInput.focus();
-      startInput.style.borderColor = '#d9534f';
-      return;
-    }
-    startInput.style.borderColor = '';
-
-    const [y, m, d] = startInput.value.split('-').map(Number);
-    const start = new Date(y, m - 1, d);
-
-    const sixMonths = addMonths(start, 6);
-    const oneYear = addMonths(start, 12);
-
-    dateStartEl.textContent = formatDate(start);
-    dateSixEl.textContent = formatDate(sixMonths);
-    dateYearEl.textContent = formatDate(oneYear);
-
-    results.classList.add('show');
-  });
-
-  // Allow pressing Enter inside the date field
-  startInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') calcBtn.click();
-  });
-
-  /* ---------------- Splash screen: startup chime ---------------- */
-  function playStartupChime(){
-    try{
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-
-      const notes = [
-        { freq: 659.25, start: 0.00, dur: 0.16 }, // E5
-        { freq: 880.00, start: 0.14, dur: 0.22 }  // A5
-      ];
-
-      notes.forEach(note => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = note.freq;
-
-        const startTime = ctx.currentTime + note.start;
-        const endTime = startTime + note.dur;
-
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.22, startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, endTime);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(startTime);
-        osc.stop(endTime + 0.05);
+  var skipBtnEl = document.getElementById('splashSkip');
+  if (skipBtnEl) {
+    ['click', 'touchend'].forEach(function(evt){
+      skipBtnEl.addEventListener(evt, function(e){
+        e.preventDefault();
+        clearTimeout(splashAutoTimer);
+        dismissSplash();
       });
-
-      setTimeout(() => ctx.close(), 900);
-    }catch(e){
-      // Audio not available/blocked — fail silently
-    }
+    });
+  }
+  // Tapping anywhere on the splash also dismisses it.
+  if (splashEl) {
+    splashEl.addEventListener('click', function(){
+      clearTimeout(splashAutoTimer);
+      dismissSplash();
+    });
   }
 
-  /* ---------------- Splash screen: greeting ---------------- */
-  (function initSplash(){
-    const splash = document.getElementById('splash');
-    const greetingEl = document.getElementById('splashGreeting');
-    const subEl = document.getElementById('splashSub');
-    const skipBtn = document.getElementById('splashSkip');
+  /* ============================================================
+     Contract date calculator
+     ============================================================ */
+  try {
+    var startInput = document.getElementById('startDate');
+    var calcBtn = document.getElementById('calcBtn');
+    var results = document.getElementById('results');
+    var dateStartEl = document.getElementById('dateStart');
+    var dateSixEl = document.getElementById('dateSix');
+    var dateYearEl = document.getElementById('dateYear');
 
-    const now = new Date();
-    const dayIndex = now.getDay(); // 0 = Sunday ... 5 = Friday
-    const hour = now.getHours();
+    var arFormatter = new Intl.DateTimeFormat('ar-SA', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    var addMonths = function(date, months) {
+      var d = new Date(date.getTime());
+      d.setMonth(d.getMonth() + months);
+      return d;
+    };
+
+    var formatDate = function(date) {
+      return arFormatter.format(date);
+    };
+
+    calcBtn.addEventListener('click', function() {
+      if (!startInput.value) {
+        startInput.focus();
+        startInput.style.borderColor = '#d9534f';
+        return;
+      }
+      startInput.style.borderColor = '';
+
+      var parts = startInput.value.split('-').map(Number);
+      var start = new Date(parts[0], parts[1] - 1, parts[2]);
+
+      var sixMonths = addMonths(start, 6);
+      var oneYear = addMonths(start, 12);
+
+      dateStartEl.textContent = formatDate(start);
+      dateSixEl.textContent = formatDate(sixMonths);
+      dateYearEl.textContent = formatDate(oneYear);
+
+      results.classList.add('show');
+    });
+
+    startInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') calcBtn.click();
+    });
+  } catch (e) {
+    console.error('Calculator init failed:', e);
+  }
+
+  /* ============================================================
+     Splash screen: greeting text + name
+     ============================================================ */
+  try {
+    var greetingEl = document.getElementById('splashGreeting');
+    var subEl = document.getElementById('splashSub');
+
+    var now = new Date();
+    var dayIndex = now.getDay(); // 0 = Sunday ... 5 = Friday
+    var hour = now.getHours();
 
     if (dayIndex === 5) {
       greetingEl.textContent = 'جمعة مباركة';
@@ -571,49 +573,67 @@
       greetingEl.textContent = 'مساء الخير';
       subEl.textContent = 'قسم الموارد البشرية';
     }
+  } catch (e) {
+    console.error('Greeting init failed:', e);
+  }
 
-    playStartupChime();
-
-    function dismiss(){
-      splash.classList.add('hide');
+  /* ============================================================
+     Splash screen: startup chime (best effort, never blocks)
+     ============================================================ */
+  try {
+    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      var ctx = new AudioCtx();
+      var notes = [
+        { freq: 659.25, start: 0.00, dur: 0.16 },
+        { freq: 880.00, start: 0.14, dur: 0.22 }
+      ];
+      notes.forEach(function(note){
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = note.freq;
+        var startTime = ctx.currentTime + note.start;
+        var endTime = startTime + note.dur;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.22, startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, endTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(endTime + 0.05);
+      });
+      setTimeout(function(){ ctx.close(); }, 900);
     }
+  } catch (e) {
+    // Audio blocked/unavailable — ignore, this must never affect the splash.
+  }
 
-    const autoTimer = setTimeout(dismiss, 2400);
-    skipBtn.addEventListener('click', () => {
-      clearTimeout(autoTimer);
-      dismiss();
-    });
-
-    // Some mobile browsers block audio until the first tap — retry once on interaction
-    document.addEventListener('click', function retryAudio(){
-      playStartupChime();
-      document.removeEventListener('click', retryAudio);
-    }, { once: true, capture: true });
-  })();
-
-  /* ---------------- Today info bar: Hijri + Gregorian ---------------- */
-  (function initTodayBar(){
-    const today = new Date();
-
-    const dayNameFormatter = new Intl.DateTimeFormat('ar-SA', { weekday: 'long' });
-    const gregorianFormatter = new Intl.DateTimeFormat('ar-SA', {
+  /* ============================================================
+     Today info bar: Hijri + Gregorian + day name
+     ============================================================ */
+  try {
+    var today = new Date();
+    var dayNameFormatter = new Intl.DateTimeFormat('ar-SA', { weekday: 'long' });
+    var gregorianFormatter = new Intl.DateTimeFormat('ar-SA', {
       day: 'numeric', month: 'long', year: 'numeric'
     });
-    let hijriFormatter;
+    var hijriFormatter;
     try {
       hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
         day: 'numeric', month: 'long', year: 'numeric'
       });
-    } catch (e) {
+    } catch (e2) {
       hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
         day: 'numeric', month: 'long', year: 'numeric'
       });
     }
-
     document.getElementById('todayDay').textContent = dayNameFormatter.format(today);
     document.getElementById('todayGregorian').textContent = 'م ' + gregorianFormatter.format(today);
     document.getElementById('todayHijri').textContent = 'هـ ' + hijriFormatter.format(today);
-  })();
+  } catch (e) {
+    console.error('Today bar init failed:', e);
+  }
 </script>
 
 </body>
