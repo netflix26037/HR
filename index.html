@@ -275,15 +275,9 @@
   }
 
   .today-bar .today-dates .g-date{
-    font-size:12px;
+    font-size:13px;
     font-weight:700;
     color:var(--ink);
-  }
-
-  .today-bar .today-dates .h-date{
-    font-size:11.5px;
-    font-weight:500;
-    color:var(--ink-soft);
   }
 
   /* ---------- Splash screen ---------- */
@@ -410,7 +404,6 @@
       <div class="today-day" id="todayDay">—</div>
       <div class="today-dates">
         <div class="g-date" id="todayGregorian">—</div>
-        <div class="h-date" id="todayHijri">—</div>
       </div>
     </div>
 
@@ -481,7 +474,7 @@
     var dateSixEl = document.getElementById('dateSix');
     var dateYearEl = document.getElementById('dateYear');
 
-    var arFormatter = new Intl.DateTimeFormat('ar-SA', {
+    var arFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -552,27 +545,16 @@
   }
 
   /* ============================================================
-     Today info bar: Hijri + Gregorian + day name
+     Today info bar: Gregorian date + day name only
      ============================================================ */
   try {
     var today = new Date();
-    var dayNameFormatter = new Intl.DateTimeFormat('ar-SA', { weekday: 'long' });
-    var gregorianFormatter = new Intl.DateTimeFormat('ar-SA', {
+    var dayNameFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { weekday: 'long' });
+    var gregorianFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', {
       day: 'numeric', month: 'long', year: 'numeric'
     });
-    var hijriFormatter;
-    try {
-      hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
-        day: 'numeric', month: 'long', year: 'numeric'
-      });
-    } catch (e2) {
-      hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
-        day: 'numeric', month: 'long', year: 'numeric'
-      });
-    }
     document.getElementById('todayDay').textContent = dayNameFormatter.format(today);
-    document.getElementById('todayGregorian').textContent = 'م ' + gregorianFormatter.format(today);
-    document.getElementById('todayHijri').textContent = 'هـ ' + hijriFormatter.format(today);
+    document.getElementById('todayGregorian').textContent = gregorianFormatter.format(today);
   } catch (e) {
     console.error('Today bar init failed:', e);
   }
